@@ -57,6 +57,18 @@ class GameWorld(private val rng: RandomXS128 = RandomXS128()) {
     /** The ball's angular half-width (degrees) on its current lane, derived from its radius. */
     fun ballHalfWidthDeg(): Float = (ballRadius / laneRadius(ballLane)) * MathUtils.radiansToDegrees
 
+    // --- Current solvability parameters, scaled with ball speed so the guarantee is a
+    // --- constant reaction TIME (35 deg within 90 deg at 120 deg/s == 0.29s of gap).
+    fun currentSolvabilityLookahead(): Float =
+        kotlin.math.min(GameConfig.SOLVABILITY_LOOKAHEAD * Difficulty.solvabilityScale(score), 180f)
+
+    fun currentSolvabilityMinGap(): Float =
+        GameConfig.SOLVABILITY_MIN_GAP * Difficulty.solvabilityScale(score)
+
+    /** Arc padding for double-block checks: widest ball half-width plus safety margin. */
+    fun currentSolvabilityPad(): Float =
+        (ballRadius / innerRadius) * MathUtils.radiansToDegrees + GameConfig.SOLVABILITY_PAD
+
     /** Tap input: instantly switch lanes. No-op unless running. */
     fun toggleLane() {
         if (state != State.RUNNING) return
@@ -154,14 +166,17 @@ class GameWorld(private val rng: RandomXS128 = RandomXS128()) {
      * despawn soonest anyway) until at least one lane has the required gap again.
      */
     private fun enforceSolvability() {
+        val lookahead = currentSolvabilityLookahead()
+        val minGap = currentSolvabilityMinGap()
+        val pad = currentSolvabilityPad()
         var guard = obstacles.size
-        while (guard-- > 0 && !Solvability.isSolvable(ballAngle, obstacles)) {
+        while (guard-- > 0 && !Solvability.isSolvable(ballAngle, obstacles, lookahead, minGap, pad)) {
             var victim = -1
             var victimLife = Float.MAX_VALUE
             for (i in 0 until obstacles.size) {
                 val o = obstacles[i]
                 if (o.life < victimLife &&
-                    AngleMath.arcsOverlap(ballAngle, GameConfig.SOLVABILITY_LOOKAHEAD, o.angle, o.arcLength)
+                    AngleMath.arcsOverlap(ballAngle, lookahead, o.angle - pad, o.arcLength + 2f * pad)
                 ) {
                     victimLife = o.life
                     victim = i
@@ -199,8 +214,9 @@ class GameWorld(private val rng: RandomXS128 = RandomXS128()) {
             val arcLen = rand(GameConfig.OBSTACLE_ARC_MIN, GameConfig.OBSTACLE_ARC_MAX)
             val angle = rand(0f, 360f)
 
-            // Fairness: never materialize on top of (or right in front of) the ball on its lane.
-            if (lane == ballLane && AngleMath.arcsOverlap(
+            // Fairness: never materialize on top of (or right in front of) the ball —
+            // on EITHER lane, since the player may toggle into the other lane at any instant.
+            if (AngleMath.arcsOverlap(
                     angle, arcLen,
                     ballAngle - GameConfig.SAFE_SPAWN_BEHIND,
                     GameConfig.SAFE_SPAWN_BEHIND + GameConfig.SAFE_SPAWN_AHEAD
@@ -216,7 +232,11 @@ class GameWorld(private val rng: RandomXS128 = RandomXS128()) {
                 GameConfig.OBSTACLE_LIFETIME
             )
             obstacles.add(o)
-            if (Solvability.isSolvable(ballAngle, obstacles)) return // committed
+            if (Solvability.isSolvable(
+                    ballAngle, obstacles,
+                    currentSolvabilityLookahead(), currentSolvabilityMinGap(), currentSolvabilityPad()
+                )
+            ) return // committed
             obstacles.removeValue(o, true)
             obstaclePool.free(o)
         }

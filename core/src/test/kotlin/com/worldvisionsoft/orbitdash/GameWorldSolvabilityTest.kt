@@ -69,7 +69,12 @@ class GameWorldSolvabilityTest {
                 if (world.state == GameWorld.State.GAME_OVER) world.reset()
                 assertTrue(
                     "seed=$seed step=$steps ball=${world.ballAngle} obstacles=${world.obstacles.size}",
-                    Solvability.isSolvable(world.ballAngle, world.obstacles)
+                    Solvability.isSolvable(
+                        world.ballAngle, world.obstacles,
+                        world.currentSolvabilityLookahead(),
+                        world.currentSolvabilityMinGap(),
+                        world.currentSolvabilityPad()
+                    )
                 )
             }
         }

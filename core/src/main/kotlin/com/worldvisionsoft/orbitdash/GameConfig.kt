@@ -49,10 +49,19 @@ object GameConfig {
     const val SAFE_SPAWN_AHEAD = 45f
 
     // --- Solvability guarantee ---
-    /** Window ahead of the ball that must stay passable, degrees. */
+    // LOOKAHEAD and MIN_GAP are the values at BALL_SPEED_START; GameWorld scales both
+    // linearly with the current ball speed so the guarantee represents constant reaction
+    // TIME (35 deg @ 120 deg/s = 0.29s) instead of shrinking to nothing at high speed.
+    /** Window ahead of the ball that must stay passable, degrees (at base speed). */
     const val SOLVABILITY_LOOKAHEAD = 90f
-    /** Minimum free gap required on at least one lane within the lookahead, degrees. */
+    /** Minimum free gap required on at least one lane within the lookahead, degrees (at base speed). */
     const val SOLVABILITY_MIN_GAP = 35f
+    /**
+     * Safety padding (degrees, per side, on top of the ball's angular half-width) used when
+     * checking that opposing-lane obstacles never block the same angle: guarantees every
+     * forced lane-hop has a usable window even at 60Hz step quantization.
+     */
+    const val SOLVABILITY_PAD = 6f
 
     // --- Coins ---
     /** Chance that a spawn wave also places a coin. */

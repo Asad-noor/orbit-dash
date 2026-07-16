@@ -17,4 +17,10 @@ object Difficulty {
     fun spawnInterval(score: Int): Float =
         GameConfig.SPAWN_INTERVAL_START +
             (GameConfig.SPAWN_INTERVAL_MIN - GameConfig.SPAWN_INTERVAL_START) * progress(score)
+
+    /**
+     * Factor by which the solvability window and minimum gap grow with speed, so the
+     * guarantee stays constant in TIME rather than degrees (1.0 at score 0, 2.0 at cap).
+     */
+    fun solvabilityScale(score: Int): Float = ballSpeed(score) / GameConfig.BALL_SPEED_START
 }
