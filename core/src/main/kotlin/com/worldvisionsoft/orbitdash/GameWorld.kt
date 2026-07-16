@@ -125,6 +125,11 @@ class GameWorld(private val rng: RandomXS128 = RandomXS128()) {
             spawnTimer = Difficulty.spawnInterval(score)
         }
 
+        // Solvability guarantee is an invariant over every state, not just spawn time:
+        // the ball's lookahead window sweeps onto track regions the spawn check never saw,
+        // and rotating obstacles can close once-legal gaps. Enforce it every step.
+        enforceSolvability()
+
         // Death check: angular overlap on the same lane.
         if (ballHitsObstacle()) state = State.GAME_OVER
     }
@@ -141,6 +146,30 @@ class GameWorld(private val rng: RandomXS128 = RandomXS128()) {
         obstacles.clear()
         coinPool.freeAll(coins)
         coins.clear()
+    }
+
+    /**
+     * Restores the solvability guarantee if ball travel / obstacle rotation violated it:
+     * removes obstacles inside the lookahead window (least remaining life first — they'd
+     * despawn soonest anyway) until at least one lane has the required gap again.
+     */
+    private fun enforceSolvability() {
+        var guard = obstacles.size
+        while (guard-- > 0 && !Solvability.isSolvable(ballAngle, obstacles)) {
+            var victim = -1
+            var victimLife = Float.MAX_VALUE
+            for (i in 0 until obstacles.size) {
+                val o = obstacles[i]
+                if (o.life < victimLife &&
+                    AngleMath.arcsOverlap(ballAngle, GameConfig.SOLVABILITY_LOOKAHEAD, o.angle, o.arcLength)
+                ) {
+                    victimLife = o.life
+                    victim = i
+                }
+            }
+            if (victim < 0) return // nothing in the window; cannot be the blocker
+            obstaclePool.free(obstacles.removeIndex(victim))
+        }
     }
 
     private fun ballHitsObstacle(): Boolean {
