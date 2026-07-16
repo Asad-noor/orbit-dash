@@ -1,0 +1,57 @@
+## Gradle
+.gradle/
+build/
+*/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+## Java / Kotlin
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+.kotlin/
+
+## Android
+local.properties
+android/libs/armeabi-v7a/
+android/libs/arm64-v8a/
+android/libs/x86/
+android/libs/x86_64/
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.cxx/
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+
+## Signing — never commit keystores or credentials
+*.jks
+*.keystore
+keystore.properties
+
+## IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+## Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+## VS Code
+.vscode/
+
+## macOS
+.DS_Store
+
+## Windows
+Thumbs.db
+desktop.ini

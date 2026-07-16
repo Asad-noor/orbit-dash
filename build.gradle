@@ -1,0 +1,58 @@
+buildscript {
+	repositories {
+		mavenCentral()
+		google()
+		gradlePluginPortal()
+	}
+	dependencies {
+		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+		classpath "com.android.tools.build:gradle:8.13.0"
+	}
+}
+
+allprojects {
+	apply plugin: 'eclipse'
+	apply plugin: 'idea'
+
+	// This allows you to "Build and run using IntelliJ IDEA", an option in IDEA's Settings.
+	idea {
+		module {
+			outputDir file('build/classes/java/main')
+			testOutputDir file('build/classes/java/test')
+		}
+	}
+
+	ext {
+		appName = 'Orbit Dash'
+	}
+
+	repositories {
+		mavenCentral()
+		google()
+		maven { url = uri('https://central.sonatype.com/repository/maven-snapshots/') }
+		maven { url = uri('https://jitpack.io') }
+	}
+}
+
+configure(subprojects - project(':android')) {
+	apply plugin: 'java-library'
+	apply plugin: 'org.jetbrains.kotlin.jvm'
+
+	java {
+		sourceCompatibility = JavaVersion.VERSION_11
+		targetCompatibility = JavaVersion.VERSION_11
+	}
+
+	kotlin {
+		compilerOptions {
+			jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+		}
+	}
+}
+
+subprojects {
+	version = '1.0.0'
+	ext.appName = 'Orbit Dash'
+}
+
+eclipse.project.name = 'Orbit Dash-parent'
